@@ -37,34 +37,18 @@
     </script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js for Statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom Scrollbar Style -->
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
         .glass-panel {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .neon-glow:hover {
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-        }
     </style>
-    <!-- Favicon: tay cầm màu hồng trên nền tối -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M17 23c-5 0-8 4-9 10l-2 12c-1 6 5 9 9 5l8-8h18l8 8c4 4 10 1 9-5l-2-12c-1-6-4-10-9-10H17z' fill='%23ec4899' stroke='%23f9a8d4' stroke-width='2'/%3E%3Cpath d='M19 31v10m-5-5h10' stroke='%230f172a' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='45' cy='33' r='3' fill='%230f172a'/%3E%3Ccircle cx='51' cy='39' r='3' fill='%230f172a'/%3E%3C/svg%3E">
 </head>
 <body class="bg-darkbg-900 text-slate-100 font-sans min-h-screen flex flex-col antialiased">
@@ -81,7 +65,6 @@
         <!-- Sidebar Navigation -->
         <aside class="w-full md:w-64 bg-darkbg-800 border-r border-slate-700/50 p-4 flex flex-col justify-between shrink-0">
             <div>
-                <!-- Logo -->
                 <div class="flex items-center space-x-3 px-3 py-4 mb-6 border-b border-slate-700/50">
                     <div role="img" aria-label="Logo tay cầm màu hồng"
                          class="w-10 h-10 rounded-full border-2 border-pink-400/70 bg-pink-500/15 text-pink-400 shadow-lg shadow-pink-500/30 flex items-center justify-center">
@@ -93,7 +76,6 @@
                     </div>
                 </div>
 
-                <!-- Navigation Links -->
                 <nav class="space-y-1.5" id="nav-container">
                     <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-white bg-brand-600 shadow-lg shadow-indigo-600/20">
                         <i class="fa-solid fa-house w-5 text-center"></i>
@@ -102,24 +84,19 @@
                 </nav>
             </div>
 
-            <!-- Auth Section at Sidebar Bottom -->
             <div class="pt-4 border-t border-slate-700/50 space-y-3" id="sidebar-auth-section">
-                <!-- If Not Logged In -->
                 <div id="auth-logged-out">
                     <button onclick="openLoginModal()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-brand-600/20 flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-right-to-bracket"></i>
                         <span>Đăng Nhập</span>
                     </button>
                 </div>
-                <!-- If Logged In -->
                 <div id="auth-logged-in" class="hidden flex-col space-y-3">
-                    <!-- Admin Action: Upload Game Button -->
                     <button id="admin-upload-btn" onclick="openUploadModal()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
                         <span>Đăng Game Mới</span>
                     </button>
 
-                    <!-- Profile Info & Logout (Thay ảnh avatar mặc định thành logo web) -->
                     <div class="flex items-center justify-between pt-2 border-t border-slate-700/40">
                         <div class="flex items-center space-x-3 overflow-hidden">
                             <div class="w-9 h-9 rounded-full border-2 border-pink-400/70 bg-pink-500/15 text-pink-400 shadow-md flex items-center justify-center shrink-0">
@@ -140,10 +117,7 @@
 
         <!-- Main Content Area -->
         <main class="flex-1 bg-darkbg-900 overflow-y-auto p-4 md:p-8">
-
-            <!-- TAB 1: DASHBOARD / CATOLOG -->
             <section id="tab-dashboard" class="space-y-6">
-                <!-- Search Only -->
                 <div class="flex flex-col md:flex-row justify-between gap-4 items-center">
                     <div class="relative w-full md:w-80">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
@@ -151,24 +125,18 @@
                     </div>
                 </div>
 
-                <!-- Game Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="catalog-grid">
-                    <!-- Dynamic Game Cards will render here -->
-                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="catalog-grid"></div>
             </section>
-
         </main>
     </div>
 
     <!-- LOGIN MODAL -->
     <div id="login-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="bg-darkbg-800 border border-slate-700 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col p-6 space-y-6 relative transform scale-95 transition-transform duration-300" id="login-modal-box">
-            <!-- Close Button -->
+        <div class="bg-darkbg-800 border border-slate-700 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col p-6 space-y-6 relative transform scale-95 transition-transform duration-300">
             <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-all">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
 
-            <!-- Header -->
             <div class="text-center space-y-2 mt-2">
                 <div class="w-12 h-12 rounded-2xl bg-brand-600/20 border border-brand-500/40 flex items-center justify-center text-brand-400 text-2xl mx-auto shadow-lg shadow-brand-500/10">
                     <i class="fa-solid fa-shield-halved"></i>
@@ -177,7 +145,6 @@
                 <p class="text-xs text-slate-400">Nhập tài khoản Admin để đăng game mới</p>
             </div>
 
-            <!-- Form -->
             <form onsubmit="handleLoginSubmit(event)" class="space-y-4" autocomplete="off">
                 <div class="space-y-1.5">
                     <label class="text-xs font-medium text-slate-300">Tài khoản (Email)</label>
@@ -201,7 +168,6 @@
                 </button>
             </form>
 
-            <!-- Switch to Register -->
             <div class="text-center text-xs text-slate-400 pt-2 border-t border-slate-700/50">
                 Chưa có tài khoản? <span class="text-brand-400 font-medium cursor-pointer hover:underline" onclick="switchToRegisterModal()">Đăng ký ngay</span>
             </div>
@@ -210,13 +176,11 @@
 
     <!-- REGISTER MODAL -->
     <div id="register-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="bg-darkbg-800 border border-slate-700 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col p-6 space-y-6 relative transform scale-95 transition-transform duration-300" id="register-modal-box">
-            <!-- Close Button -->
+        <div class="bg-darkbg-800 border border-slate-700 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col p-6 space-y-6 relative transform scale-95 transition-transform duration-300">
             <button onclick="closeRegisterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-all">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
 
-            <!-- Header -->
             <div class="text-center space-y-2 mt-2">
                 <div class="w-12 h-12 rounded-2xl bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-2xl mx-auto shadow-lg shadow-emerald-500/10">
                     <i class="fa-solid fa-user-plus"></i>
@@ -225,7 +189,6 @@
                 <p class="text-xs text-slate-400">Tham gia ngay cộng đồng KuroG-game18</p>
             </div>
 
-            <!-- Form -->
             <form onsubmit="handleRegisterSubmit(event)" class="space-y-4" autocomplete="off">
                 <div class="space-y-1.5">
                     <label class="text-xs font-medium text-slate-300">Tên hiển thị</label>
@@ -257,64 +220,58 @@
                 </button>
             </form>
 
-            <!-- Switch to Login -->
             <div class="text-center text-xs text-slate-400 pt-2 border-t border-slate-700/50">
                 Đã có tài khoản? <span class="text-brand-400 font-medium cursor-pointer hover:underline" onclick="switchToLoginModal()">Đăng nhập ngay</span>
             </div>
         </div>
     </div>
 
-    <!-- UPLOAD GAME MODAL -->
+    <!-- UPLOAD / EDIT GAME MODAL -->
     <div id="upload-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="bg-darkbg-800 border border-slate-700 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col p-6 space-y-5 relative transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="upload-modal-box">
-            <!-- Close Button -->
+        <div class="bg-darkbg-800 border border-slate-700 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col p-6 space-y-5 relative transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
             <button onclick="closeUploadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-all">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
 
-            <!-- Header -->
             <div class="text-center space-y-1 mt-1">
                 <div class="w-12 h-12 rounded-2xl bg-brand-600/20 border border-brand-500/40 flex items-center justify-center text-brand-400 text-2xl mx-auto shadow-lg shadow-brand-500/10">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <i class="fa-solid fa-cloud-arrow-up" id="modal-form-icon"></i>
                 </div>
-                <h3 class="text-xl font-bold text-white tracking-wide">Đăng Tựa Game Mới</h3>
-                <p class="text-xs text-slate-400">Thêm trò chơi mới vào danh mục hệ thống</p>
+                <h3 class="text-xl font-bold text-white tracking-wide" id="modal-form-title">Đăng Tựa Game Mới</h3>
+                <p class="text-xs text-slate-400" id="modal-form-subtitle">Thêm trò chơi mới vào danh mục hệ thống</p>
             </div>
 
-            <!-- Form -->
             <form onsubmit="handleUploadGameSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editing-game-id" value="">
+                
                 <div class="space-y-1.5">
                     <label class="text-xs font-medium text-slate-300">Tên Game</label>
                     <input type="text" id="game-title" required placeholder="Ví dụ: Cyberpunk Runner 2..." class="w-full bg-darkbg-900 text-slate-200 text-sm px-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500 transition-all">
                 </div>
 
-                <!-- Tải ảnh bìa từ máy tính -->
                 <div class="space-y-1.5">
                     <label class="text-xs font-medium text-slate-300">Ảnh Bìa Game (Chọn từ máy tính)</label>
                     <div class="flex items-center space-x-4">
                         <label class="flex-1 cursor-pointer bg-darkbg-900 hover:bg-slate-700/50 border border-slate-700 hover:border-brand-500 px-4 py-2.5 rounded-xl text-sm text-slate-300 transition-all flex items-center space-x-2">
                             <i class="fa-solid fa-image text-brand-400"></i>
                             <span id="file-name-label" class="truncate">Chọn tệp hình ảnh...</span>
-                            <input type="file" id="game-cover-file" accept="image/*" required onchange="handleCoverImageSelect(event)" class="hidden">
+                            <input type="file" id="game-cover-file" accept="image/*" onchange="handleCoverImageSelect(event)" class="hidden">
                         </label>
                     </div>
-                    <!-- Xem trước ảnh -->
                     <div id="cover-preview-container" class="hidden mt-2 relative w-full h-32 rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
                         <img id="cover-preview-img" class="w-full h-full object-cover" alt="Preview">
                     </div>
                 </div>
 
-                <!-- Video Hướng Dẫn Game YouTube -->
                 <div class="space-y-1.5">
                     <label class="text-xs font-medium text-slate-300 flex items-center space-x-1.5">
                         <i class="fa-brands fa-youtube text-red-500"></i>
-                        <span>Đường dẫn Video Hướng Dẫn Game (YouTube)</span>
+                        <span>Đường dẫn Hướng Dẫn Vượt Link (YouTube / Shorts)</span>
                     </label>
-                    <input type="text" id="game-url" placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/..." class="w-full bg-darkbg-900 text-slate-200 text-sm px-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500 transition-all">
-                    <p class="text-[11px] text-slate-500">Dán link video hướng dẫn YouTube để người chơi xem.</p>
+                    <input type="text" id="game-url" placeholder="https://youtube.com/shorts/... hoặc https://youtu.be/..." class="w-full bg-darkbg-900 text-slate-200 text-sm px-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500 transition-all">
+                    <p class="text-[11px] text-slate-500">Dán link YouTube hoặc Shorts để hiển thị dưới dạng khung màn hình dọc.</p>
                 </div>
 
-                <!-- Quản lý Link Tải Game Động -->
                 <div class="space-y-2 pt-2 border-t border-slate-700/50">
                     <div class="flex justify-between items-center">
                         <label class="text-xs font-medium text-slate-300 flex items-center space-x-1.5">
@@ -327,9 +284,7 @@
                         </button>
                     </div>
                     
-                    <div id="download-links-container" class="space-y-2.5">
-                        <!-- Các dòng link tải -->
-                    </div>
+                    <div id="download-links-container" class="space-y-2.5"></div>
                 </div>
 
                 <div class="space-y-1.5 pt-2">
@@ -338,7 +293,7 @@
                 </div>
 
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center space-x-2">
-                    <span>Xác Nhận Đăng Game</span>
+                    <span id="submit-btn-text">Xác Nhận Đăng Game</span>
                     <i class="fa-solid fa-check text-xs"></i>
                 </button>
             </form>
@@ -348,7 +303,6 @@
     <!-- GAME LAUNCHER / PLAY MODAL -->
     <div id="game-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-darkbg-800 border border-slate-700 w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <!-- Modal Header -->
             <div class="flex justify-between items-center px-6 py-4 border-b border-slate-700/80 bg-darkbg-900/50 shrink-0">
                 <div class="flex items-center space-x-3">
                     <h3 class="text-lg font-bold text-white">Chi Tiết Trò Chơi</h3>
@@ -358,54 +312,50 @@
                 </button>
             </div>
 
-            <!-- Modal Content (Scrollable) -->
             <div class="overflow-y-auto flex-1 p-5 space-y-5">
-                
-                <!-- 1. HÌNH NỀN GAME & KHUNG TÊN MỜ BÊN TRÁI (CHIẾM 50%) -->
+                <!-- 1. COVER PHOTO -->
                 <div class="bg-black relative h-[340px] sm:h-[420px] md:h-[480px] rounded-2xl overflow-hidden shrink-0 flex items-center shadow-2xl border border-slate-700/50">
-                    <!-- Ảnh nền chiếm toàn bộ -->
                     <img id="modal-game-cover" class="w-full h-full object-cover absolute inset-0 transition-all duration-300" alt="Game Cover">
-                    
-                    <!-- Khung kính mờ (Blur box) đặt ở bên trái chiếm 50% -->
                     <div class="absolute left-0 top-0 bottom-0 w-full md:w-1/2 bg-slate-900/75 backdrop-blur-md p-6 sm:p-8 flex flex-col justify-center border-r border-white/10 z-10 shadow-2xl">
                         <span class="text-xs font-semibold text-brand-400 uppercase tracking-widest mb-2"><i class="fa-solid fa-gamepad mr-1.5"></i>KuroG-game18</span>
                         <h2 id="modal-title" class="text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug drop-shadow-md">Tên Trò Chơi</h2>
                     </div>
                 </div>
 
-                <!-- 2. PHẦN MÔ TẢ VỀ GAME (Nằm ngay dưới hình nền) -->
+                <!-- 2. DESCRIPTION -->
                 <div class="bg-darkbg-900/60 p-4 rounded-xl border border-slate-700/50 space-y-1.5">
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
                         <i class="fa-solid fa-circle-info text-brand-400"></i>
                         <span>Mô Tả Trò Chơi</span>
                     </p>
-                    <p id="modal-desc" class="text-sm text-slate-200 leading-relaxed">Khám phá thành phố tương lai...</p>
+                    <p id="modal-desc" class="text-sm text-slate-200 leading-relaxed"></p>
                 </div>
 
-                <!-- 3. DANH SÁCH LINK TẢI GAME -->
+                <!-- 3. DOWNLOAD LINKS -->
                 <div class="bg-darkbg-900/60 p-4 rounded-xl border border-slate-700/50 space-y-3">
                     <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
                         <i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i>
                         <span>Tải Xuống Trò Chơi</span>
                     </p>
-                    <div id="modal-download-links" class="flex flex-wrap gap-2.5">
-                        <!-- Các nút link tải -->
-                    </div>
+                    <div id="modal-download-links" class="flex flex-wrap gap-2.5"></div>
                 </div>
 
-                <!-- 4. VIDEO HƯỚNG DẪN TẢI GAME TỪ YOUTUBE (Nằm ở dưới cùng) -->
+                <!-- 4. HƯỚNG DẪN VƯỢT LINK -->
                 <div class="bg-darkbg-900/60 p-4 rounded-xl border border-slate-700/50 space-y-3">
                     <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
                         <i class="fa-brands fa-youtube text-red-500"></i>
-                        <span>Video Hướng Dẫn Tải & Cài Đặt</span>
+                        <span>HƯỚNG DẪN VƯỢT LINK</span>
                     </p>
-                    <div class="relative h-[280px] sm:h-[360px] bg-black rounded-xl overflow-hidden flex items-center justify-center border border-slate-700/50">
-                        <iframe id="game-iframe" class="w-full h-full border-0 absolute inset-0 hidden" allowfullscreen></iframe>
-                        <div id="youtube-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-slate-900/90">
-                            <div class="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center text-xl shadow-xl cursor-pointer hover:scale-110 transition-transform mb-2" onclick="playYouTubeVideo()">
+                    
+                    <div class="flex justify-center">
+                        <div class="relative w-[280px] h-[498px] sm:w-[315px] sm:h-[560px] bg-slate-900 rounded-2xl overflow-hidden flex flex-col items-center justify-center border border-slate-700/50 shadow-2xl p-6 text-center space-y-4">
+                            <div class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center text-2xl shadow-xl cursor-pointer hover:scale-110 transition-transform" onclick="playYouTubeVideo()">
                                 <i class="fa-solid fa-play ml-0.5"></i>
                             </div>
-                            <p class="text-xs text-slate-300 font-medium">Bấm để phát video hướng dẫn</p>
+                            <div class="space-y-1">
+                                <p class="text-sm text-white font-semibold">Xem Hướng Dẫn Vượt Link</p>
+                                <p class="text-xs text-slate-400">Bấm để mở video trực tiếp trên YouTube xem cách vượt link</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -413,8 +363,20 @@
             </div>
 
             <!-- Modal Footer -->
-            <div class="p-4 bg-darkbg-800 border-t border-slate-700/80 flex justify-end shrink-0">
-                <button onclick="closeGameModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-5 py-2 rounded-xl text-sm font-medium transition-all">Đóng</button>
+            <div class="p-4 bg-darkbg-800 border-t border-slate-700/80 flex justify-between items-center shrink-0">
+                <div id="admin-actions-container" class="hidden flex items-center space-x-2">
+                    <button onclick="openEditGameModal()" class="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Chỉnh Sửa Game</span>
+                    </button>
+                    <button onclick="confirmDeleteGame()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Xóa Game</span>
+                    </button>
+                </div>
+                <div class="ml-auto">
+                    <button onclick="closeGameModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-5 py-2 rounded-xl text-sm font-medium transition-all">Đóng</button>
+                </div>
             </div>
         </div>
     </div>
@@ -470,18 +432,7 @@
         }
 
         function getYouTubeEmbedUrl(url) {
-            if (!url) return '';
-            let videoId = '';
-            if (url.includes('youtu.be/')) {
-                videoId = url.split('youtu.be/')[1]?.split('?')[0];
-            } else if (url.includes('youtube.com')) {
-                const urlParams = new URLSearchParams(new URL(url).search);
-                videoId = urlParams.get('v');
-                if (!videoId && url.includes('/embed/')) {
-                    videoId = url.split('/embed/')[1]?.split('?')[0];
-                }
-            }
-            return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url;
+            return url || '';
         }
 
         function renderCatalog() {
@@ -520,7 +471,6 @@
             `).join('');
         }
 
-        // Modals Control
         function openLoginModal() {
             document.getElementById('login-modal').classList.remove('opacity-0', 'pointer-events-none');
         }
@@ -538,6 +488,23 @@
         }
 
         function openUploadModal() {
+            document.getElementById('editing-game-id').value = '';
+            document.getElementById('modal-form-icon').className = 'fa-solid fa-cloud-arrow-up';
+            document.getElementById('modal-form-title').innerText = 'Đăng Tựa Game Mới';
+            document.getElementById('modal-form-subtitle').innerText = 'Thêm trò chơi mới vào danh mục hệ thống';
+            document.getElementById('submit-btn-text').innerText = 'Xác Nhận Đăng Game';
+            
+            document.getElementById('game-title').value = '';
+            document.getElementById('game-url').value = '';
+            document.getElementById('game-desc').value = '';
+            document.getElementById('game-cover-file').value = '';
+            document.getElementById('file-name-label').innerText = 'Chọn tệp hình ảnh...';
+            document.getElementById('cover-preview-container').classList.add('hidden');
+            uploadedCoverBase64 = '';
+            
+            document.getElementById('download-links-container').innerHTML = '';
+            addDownloadLinkField();
+
             document.getElementById('upload-modal').classList.remove('opacity-0', 'pointer-events-none');
         }
 
@@ -580,6 +547,7 @@
 
                 closeLoginModal();
                 showToast('Đăng nhập thành công tài khoản Quản trị viên!');
+                renderCatalog();
             } else {
                 showToast('Sai tài khoản hoặc mật khẩu Admin!');
             }
@@ -609,6 +577,7 @@
         function handleUploadGameSubmit(event) {
             event.preventDefault();
 
+            const editingId = document.getElementById('editing-game-id').value;
             const title = document.getElementById('game-title').value.trim();
             const rawUrl = document.getElementById('game-url').value.trim();
             const gameUrl = getYouTubeEmbedUrl(rawUrl);
@@ -627,29 +596,36 @@
                 }
             });
 
-            const newGame = {
-                id: Date.now().toString(),
-                title: title,
-                desc: desc,
-                cover: uploadedCoverBase64 || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
-                gameUrl: gameUrl,
-                downloadLinks: downloadLinks,
-                status: 'Public'
-            };
+            if (editingId) {
+                // Cập nhật game cũ
+                const game = gamesData.find(g => g.id === editingId);
+                if (game) {
+                    game.title = title;
+                    game.desc = desc;
+                    game.gameUrl = gameUrl;
+                    game.downloadLinks = downloadLinks;
+                    if (uploadedCoverBase64) {
+                        game.cover = uploadedCoverBase64;
+                    }
+                }
+                showToast(`Đã cập nhật thành công tựa game: ${title}`);
+            } else {
+                // Tạo game mới
+                const newGame = {
+                    id: Date.now().toString(),
+                    title: title,
+                    desc: desc,
+                    cover: uploadedCoverBase64 || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
+                    gameUrl: gameUrl,
+                    downloadLinks: downloadLinks,
+                    status: 'Public'
+                };
+                gamesData.unshift(newGame);
+                showToast(`Đăng thành công tựa game: ${title}`);
+            }
 
-            gamesData.unshift(newGame);
             renderCatalog();
             closeUploadModal();
-            event.target.reset();
-            
-            document.getElementById('file-name-label').innerText = 'Chọn tệp hình ảnh...';
-            document.getElementById('cover-preview-container').classList.add('hidden');
-            uploadedCoverBase64 = '';
-            
-            document.getElementById('download-links-container').innerHTML = '';
-            addDownloadLinkField();
-
-            showToast(`Đăng thành công tựa game: ${title}`);
         }
 
         function handleLogout() {
@@ -664,6 +640,7 @@
             uploadBtn.classList.add('hidden');
 
             showToast('Đã đăng xuất khỏi hệ thống.');
+            renderCatalog();
         }
 
         function launchGame(id) {
@@ -675,18 +652,10 @@
             document.getElementById('modal-title').innerText = game.title;
             document.getElementById('modal-desc').innerText = game.desc;
 
-            // Hiển thị ảnh nền (cover)
             const coverImg = document.getElementById('modal-game-cover');
             coverImg.src = game.cover;
             coverImg.classList.remove('hidden');
 
-            // Reset iframe YouTube ở dưới cùng về trạng thái ban đầu (chưa phát)
-            const iframe = document.getElementById('game-iframe');
-            iframe.classList.add('hidden');
-            iframe.src = '';
-            document.getElementById('youtube-placeholder').classList.remove('hidden');
-
-            // Render các nút link tải game
             const downloadContainer = document.getElementById('modal-download-links');
             if (game.downloadLinks && game.downloadLinks.length > 0) {
                 downloadContainer.innerHTML = game.downloadLinks.map(link => `
@@ -699,8 +668,63 @@
                 downloadContainer.innerHTML = `<span class="text-xs text-slate-500 italic">Chưa có link tải nào được cập nhật.</span>`;
             }
 
+            // Hiển thị nút Sửa/Xóa nếu là Admin
+            const adminActions = document.getElementById('admin-actions-container');
+            if (isAdmin) {
+                adminActions.classList.remove('hidden');
+                adminActions.classList.add('flex');
+            } else {
+                adminActions.classList.remove('flex');
+                adminActions.classList.add('hidden');
+            }
+
             const modal = document.getElementById('game-modal');
             modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function openEditGameModal() {
+            if (!currentActiveGame) return;
+            closeGameModal();
+
+            document.getElementById('editing-game-id').value = currentActiveGame.id;
+            document.getElementById('modal-form-icon').className = 'fa-solid fa-pen-to-square';
+            document.getElementById('modal-form-title').innerText = 'Chỉnh Sửa Thông Tin Game';
+            document.getElementById('modal-form-subtitle').innerText = `Cập nhật dữ liệu cho: ${currentActiveGame.title}`;
+            document.getElementById('submit-btn-text').innerText = 'Lưu Thay Đổi';
+
+            document.getElementById('game-title').value = currentActiveGame.title;
+            document.getElementById('game-url').value = currentActiveGame.gameUrl || '';
+            document.getElementById('game-desc').value = currentActiveGame.desc;
+            
+            // Preview ảnh cũ
+            uploadedCoverBase64 = '';
+            document.getElementById('file-name-label').innerText = 'Giữ ảnh cũ (hoặc chọn ảnh mới từ máy)...';
+            const previewImg = document.getElementById('cover-preview-img');
+            previewImg.src = currentActiveGame.cover;
+            document.getElementById('cover-preview-container').classList.remove('hidden');
+
+            // Nạp danh sách link tải hiện có
+            const container = document.getElementById('download-links-container');
+            container.innerHTML = '';
+            if (currentActiveGame.downloadLinks && currentActiveGame.downloadLinks.length > 0) {
+                currentActiveGame.downloadLinks.forEach(link => {
+                    addDownloadLinkField(link.name, link.url);
+                });
+            } else {
+                addDownloadLinkField();
+            }
+
+            document.getElementById('upload-modal').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function confirmDeleteGame() {
+            if (!currentActiveGame) return;
+            if (confirm(`Bạn có chắc chắn muốn xóa tựa game "${currentActiveGame.title}" không?`)) {
+                gamesData = gamesData.filter(g => g.id !== currentActiveGame.id);
+                closeGameModal();
+                renderCatalog();
+                showToast('Đã xóa game thành công khỏi hệ thống!');
+            }
         }
 
         function playYouTubeVideo() {
@@ -708,17 +732,12 @@
                 showToast('Chưa có đường dẫn video hướng dẫn cho game này!');
                 return;
             }
-
-            const iframe = document.getElementById('game-iframe');
-            iframe.src = currentActiveGame.gameUrl;
-            iframe.classList.remove('hidden');
-            document.getElementById('youtube-placeholder').classList.add('hidden');
+            window.open(currentActiveGame.gameUrl, '_blank');
         }
 
         function closeGameModal() {
             const modal = document.getElementById('game-modal');
             modal.classList.add('opacity-0', 'pointer-events-none');
-            document.getElementById('game-iframe').src = '';
             currentActiveGame = null;
         }
 
