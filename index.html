@@ -127,6 +127,47 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="catalog-grid"></div>
             </section>
+
+            <!-- TRANG CHI TIẾT RIÊNG CHO TỪNG GAME -->
+            <section id="game-detail-page" class="hidden space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <button type="button" onclick="closeGameModal()" class="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white bg-darkbg-800 border border-slate-700 px-4 py-2 rounded-xl transition-all">
+                        <i class="fa-solid fa-arrow-left"></i><span>Quay lại danh sách game</span>
+                    </button>
+                    <div id="detail-admin-actions" class="hidden items-center gap-2">
+                        <button type="button" onclick="openEditGameModal()" class="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all"><i class="fa-solid fa-pen-to-square mr-1"></i> Chỉnh sửa</button>
+                        <button type="button" onclick="confirmDeleteGame()" class="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all"><i class="fa-solid fa-trash mr-1"></i> Xóa game</button>
+                    </div>
+                </div>
+                <article class="max-w-5xl mx-auto space-y-6">
+                    <div class="rounded-2xl overflow-hidden border border-slate-700/60 bg-darkbg-800 shadow-2xl">
+                        <div class="relative h-64 sm:h-80 md:h-[440px] bg-slate-900">
+                            <img id="detail-game-cover" class="absolute inset-0 w-full h-full object-cover" alt="Ảnh bìa game">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent"></div>
+                            <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+                                <p class="text-xs font-semibold text-brand-300 uppercase tracking-widest mb-2"><i class="fa-solid fa-gamepad mr-2"></i>KuroG Games</p>
+                                <h1 id="detail-game-title" class="text-2xl sm:text-4xl font-black text-white drop-shadow-lg"></h1>
+                            </div>
+                        </div>
+                    </div>
+                    <section class="bg-darkbg-800/80 p-5 sm:p-6 rounded-2xl border border-slate-700/60 space-y-3">
+                        <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-circle-info text-brand-400 mr-2"></i>Mô tả trò chơi</h2>
+                        <p id="detail-game-desc" class="text-sm sm:text-base text-slate-200 leading-7 whitespace-pre-wrap"></p>
+                    </section>
+                    <section class="bg-darkbg-800/80 p-5 sm:p-6 rounded-2xl border border-slate-700/60 space-y-4">
+                        <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-download text-emerald-400 mr-2"></i>Link tải game</h2>
+                        <div id="detail-download-links" class="flex flex-wrap gap-3"></div>
+                    </section>
+                    <section class="bg-darkbg-800/80 p-5 sm:p-6 rounded-2xl border border-slate-700/60 space-y-4">
+                        <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider"><i class="fa-brands fa-youtube text-red-500 mr-2"></i>Hướng dẫn vượt link</h2>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <p class="text-sm text-slate-400">Xem video hướng dẫn trước khi tải game.</p>
+                            <button id="detail-youtube-button" type="button" onclick="playYouTubeVideo()" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all"><i class="fa-solid fa-play"></i> Xem hướng dẫn trên YouTube</button>
+                        </div>
+                        <p id="detail-no-youtube" class="hidden text-xs text-slate-500">Game này chưa có video hướng dẫn.</p>
+                    </section>
+                </article>
+            </section>
         </main>
     </div>
 
@@ -383,16 +424,42 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        const GAMES_STORAGE_KEY = 'kuroGamesData_v1';
         let gamesData = [];
         let isLoggedIn = false;
         let isAdmin = false;
         let uploadedCoverBase64 = "";
         let currentActiveGame = null;
 
+        function loadGamesFromStorage() {
+            try {
+                const saved = localStorage.getItem(GAMES_STORAGE_KEY);
+                const parsed = saved ? JSON.parse(saved) : [];
+                gamesData = Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.error('Không thể đọc dữ liệu game đã lưu:', error);
+                gamesData = [];
+            }
+        }
+
+        function saveGamesToStorage() {
+            try {
+                localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(gamesData));
+                return true;
+            } catch (error) {
+                console.error('Không thể lưu dữ liệu game:', error);
+                showToast('Không đủ dung lượng trình duyệt để lưu. Hãy dùng ảnh có dung lượng nhỏ hơn.');
+                return false;
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
+            loadGamesFromStorage();
             renderCatalog();
             addDownloadLinkField();
+            handleRouteChange();
         });
+        window.addEventListener('hashchange', handleRouteChange);
 
         function switchTab(tabName) {
             const el = document.getElementById(`tab-${tabName}`);
@@ -435,13 +502,27 @@
             return url || '';
         }
 
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
         function renderCatalog() {
             const container = document.getElementById('catalog-grid');
-            const searchVal = document.getElementById('catalog-search').value.toLowerCase();
+            const searchInput = document.getElementById('catalog-search');
+            const searchVal = (searchInput?.value || '').toLowerCase().trim();
 
-            const filtered = gamesData.filter(g => {
-                const matchStatus = g.status === 'Public';
-                const matchSearch = g.title.toLowerCase().includes(searchVal) || g.desc.toLowerCase().includes(searchVal);
+            // Game mới đăng luôn đứng đầu; game cũ tự động lùi về sau.
+            const newestFirst = [...gamesData].sort((a, b) => {
+                const dateA = Number(a.createdAt || a.id || 0);
+                const dateB = Number(b.createdAt || b.id || 0);
+                return dateB - dateA;
+            });
+            const filtered = newestFirst.filter(game => {
+                const matchStatus = game.status === 'Public';
+                const matchSearch = String(game.title || '').toLowerCase().includes(searchVal) ||
+                    String(game.desc || '').toLowerCase().includes(searchVal);
                 return matchStatus && matchSearch;
             });
 
@@ -450,25 +531,70 @@
                     <div class="col-span-full py-12 text-center text-slate-500">
                         <i class="fa-solid fa-gamepad text-4xl mb-3 opacity-50"></i>
                         <p class="text-base font-medium">Chưa có tựa game nào trong hệ thống. Hãy đăng nhập tài khoản Admin để đăng game mới!</p>
-                    </div>
-                `;
+                    </div>`;
                 return;
             }
 
-            container.innerHTML = filtered.map(game => `
-                <div onclick="launchGame('${game.id}')" class="glass-panel rounded-2xl overflow-hidden border border-slate-700/55 hover:border-brand-500/60 transition-all duration-300 flex flex-col group cursor-pointer shadow-lg hover:shadow-brand-500/10">
+            container.innerHTML = filtered.map((game, index) => `
+                <article onclick="launchGame('${escapeHTML(game.id)}')" role="link" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();launchGame('${escapeHTML(game.id)}')}" class="glass-panel rounded-2xl overflow-hidden border border-slate-700/55 hover:border-brand-500/60 transition-all duration-300 flex flex-col group cursor-pointer shadow-lg hover:shadow-brand-500/10">
                     <div class="relative h-44 overflow-hidden bg-slate-800">
-                        <img src="${game.cover}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${game.title}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80'">
-                        <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                        <img src="${escapeHTML(game.cover || '')}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${escapeHTML(game.title)}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80'">
+                        ${index === 0 ? '<span class="absolute top-3 left-3 bg-brand-600/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">MỚI NHẤT</span>' : ''}
                     </div>
                     <div class="p-4 flex-1 flex flex-col justify-between">
                         <div>
-                            <h3 class="font-bold text-base text-white group-hover:text-brand-400 transition-colors line-clamp-1">${game.title}</h3>
-                            <p class="text-xs text-slate-400 mt-1 line-clamp-2">${game.desc}</p>
+                            <h3 class="font-bold text-base text-white group-hover:text-brand-400 transition-colors line-clamp-1">${escapeHTML(game.title)}</h3>
+                            <p class="text-xs text-slate-400 mt-1 line-clamp-2">${escapeHTML(game.desc)}</p>
                         </div>
+                        <p class="text-xs text-brand-400 mt-4 font-semibold">Xem chi tiết <i class="fa-solid fa-arrow-right ml-1"></i></p>
                     </div>
-                </div>
-            `).join('');
+                </article>`).join('');
+        }
+
+        function handleRouteChange() {
+            const match = location.hash.match(/^#game\/(.+)$/);
+            if (match) {
+                showGamePage(decodeURIComponent(match[1]));
+            } else {
+                showDashboard();
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('tab-dashboard').classList.remove('hidden');
+            document.getElementById('game-detail-page').classList.add('hidden');
+            currentActiveGame = null;
+            renderCatalog();
+        }
+
+        function showGamePage(id) {
+            const game = gamesData.find(item => String(item.id) === String(id));
+            if (!game) {
+                showDashboard();
+                if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+                return;
+            }
+            currentActiveGame = game;
+            document.getElementById('tab-dashboard').classList.add('hidden');
+            document.getElementById('game-detail-page').classList.remove('hidden');
+            document.getElementById('detail-game-cover').src = game.cover || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80';
+            document.getElementById('detail-game-title').textContent = game.title || '';
+            document.getElementById('detail-game-desc').textContent = game.desc || 'Chưa có mô tả.';
+
+            const linksContainer = document.getElementById('detail-download-links');
+            const links = Array.isArray(game.downloadLinks) ? game.downloadLinks : [];
+            linksContainer.innerHTML = links.length ? links.map(link => `
+                <a href="${escapeHTML(link.url)}" target="_blank" rel="noopener noreferrer" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 px-4 py-3 rounded-xl text-sm font-semibold transition-all inline-flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i><span>${escapeHTML(link.name || 'Link Tải')}</span>
+                </a>`).join('') : '<p class="text-sm text-slate-500 italic">Chưa có link tải nào được cập nhật.</p>' ;
+
+            const hasVideo = Boolean(game.gameUrl);
+            document.getElementById('detail-youtube-button').classList.toggle('hidden', !hasVideo);
+            document.getElementById('detail-no-youtube').classList.toggle('hidden', hasVideo);
+            document.getElementById('detail-admin-actions').classList.toggle('hidden', !isAdmin);
+            document.getElementById('detail-admin-actions').classList.toggle('flex', isAdmin);
+            document.title = `${game.title} | KuroG Games`;
+            window.scrollTo({ top: 0, behavior: 'auto' });
         }
 
         function openLoginModal() {
@@ -510,6 +636,10 @@
 
         function closeUploadModal() {
             document.getElementById('upload-modal').classList.add('opacity-0', 'pointer-events-none');
+            const editingId = document.getElementById('editing-game-id').value;
+            if (editingId && location.hash === `#game/${encodeURIComponent(editingId)}`) {
+                showGamePage(editingId);
+            }
         }
 
         function switchToRegisterModal() {
@@ -597,22 +727,25 @@
             });
 
             if (editingId) {
-                // Cập nhật game cũ
-                const game = gamesData.find(g => g.id === editingId);
-                if (game) {
-                    game.title = title;
-                    game.desc = desc;
-                    game.gameUrl = gameUrl;
-                    game.downloadLinks = downloadLinks;
-                    if (uploadedCoverBase64) {
-                        game.cover = uploadedCoverBase64;
-                    }
+                // Cập nhật đúng game theo ID; không báo thành công nếu không tìm thấy.
+                const game = gamesData.find(g => String(g.id) === String(editingId));
+                if (!game) {
+                    showToast('Không tìm thấy game cần chỉnh sửa. Vui lòng mở lại game và thử lại.');
+                    return;
+                }
+                game.title = title;
+                game.desc = desc;
+                game.gameUrl = gameUrl;
+                game.downloadLinks = downloadLinks;
+                if (uploadedCoverBase64) {
+                    game.cover = uploadedCoverBase64;
                 }
                 showToast(`Đã cập nhật thành công tựa game: ${title}`);
             } else {
                 // Tạo game mới
                 const newGame = {
                     id: Date.now().toString(),
+                    createdAt: Date.now(),
                     title: title,
                     desc: desc,
                     cover: uploadedCoverBase64 || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
@@ -624,8 +757,14 @@
                 showToast(`Đăng thành công tựa game: ${title}`);
             }
 
+            saveGamesToStorage();
             renderCatalog();
             closeUploadModal();
+            if (editingId) {
+                // Cập nhật lại trang chi tiết kể cả khi hash không thay đổi.
+                location.hash = `#game/${encodeURIComponent(editingId)}`;
+                showGamePage(editingId);
+            }
         }
 
         function handleLogout() {
@@ -644,71 +783,48 @@
         }
 
         function launchGame(id) {
-            const game = gamesData.find(g => g.id === id);
+            const game = gamesData.find(item => String(item.id) === String(id));
             if (!game) return;
-
-            currentActiveGame = game;
-
-            document.getElementById('modal-title').innerText = game.title;
-            document.getElementById('modal-desc').innerText = game.desc;
-
-            const coverImg = document.getElementById('modal-game-cover');
-            coverImg.src = game.cover;
-            coverImg.classList.remove('hidden');
-
-            const downloadContainer = document.getElementById('modal-download-links');
-            if (game.downloadLinks && game.downloadLinks.length > 0) {
-                downloadContainer.innerHTML = game.downloadLinks.map(link => `
-                    <a href="${link.url}" target="_blank" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2">
-                        <i class="fa-solid fa-download text-[11px]"></i>
-                        <span>${link.name}</span>
-                    </a>
-                `).join('');
-            } else {
-                downloadContainer.innerHTML = `<span class="text-xs text-slate-500 italic">Chưa có link tải nào được cập nhật.</span>`;
-            }
-
-            // Hiển thị nút Sửa/Xóa nếu là Admin
-            const adminActions = document.getElementById('admin-actions-container');
-            if (isAdmin) {
-                adminActions.classList.remove('hidden');
-                adminActions.classList.add('flex');
-            } else {
-                adminActions.classList.remove('flex');
-                adminActions.classList.add('hidden');
-            }
-
-            const modal = document.getElementById('game-modal');
-            modal.classList.remove('opacity-0', 'pointer-events-none');
+            location.hash = `#game/${encodeURIComponent(game.id)}`;
         }
 
         function openEditGameModal() {
-            if (!currentActiveGame) return;
-            closeGameModal();
+            // Lưu tham chiếu game trước khi đóng modal chi tiết, vì closeGameModal()
+            // sẽ đặt currentActiveGame về null.
+            const gameToEdit = currentActiveGame;
+            if (!isAdmin || !gameToEdit) {
+                showToast('Không tìm thấy game hoặc bạn không có quyền chỉnh sửa.');
+                return;
+            }
 
-            document.getElementById('editing-game-id').value = currentActiveGame.id;
+            // Chỉ ẩn trang chi tiết; giữ nguyên đối tượng game đang chỉnh sửa.
+            document.getElementById('game-detail-page').classList.add('hidden');
+            document.getElementById('tab-dashboard').classList.remove('hidden');
+
+            document.getElementById('editing-game-id').value = gameToEdit.id;
             document.getElementById('modal-form-icon').className = 'fa-solid fa-pen-to-square';
             document.getElementById('modal-form-title').innerText = 'Chỉnh Sửa Thông Tin Game';
-            document.getElementById('modal-form-subtitle').innerText = `Cập nhật dữ liệu cho: ${currentActiveGame.title}`;
+            document.getElementById('modal-form-subtitle').innerText = `Cập nhật dữ liệu cho: ${gameToEdit.title || ''}`;
             document.getElementById('submit-btn-text').innerText = 'Lưu Thay Đổi';
 
-            document.getElementById('game-title').value = currentActiveGame.title;
-            document.getElementById('game-url').value = currentActiveGame.gameUrl || '';
-            document.getElementById('game-desc').value = currentActiveGame.desc;
-            
-            // Preview ảnh cũ
+            document.getElementById('game-title').value = gameToEdit.title || '';
+            document.getElementById('game-url').value = gameToEdit.gameUrl || '';
+            document.getElementById('game-desc').value = gameToEdit.desc || '';
+
+            // Giữ ảnh bìa hiện tại nếu quản trị viên không chọn ảnh mới.
             uploadedCoverBase64 = '';
+            document.getElementById('game-cover-file').value = '';
             document.getElementById('file-name-label').innerText = 'Giữ ảnh cũ (hoặc chọn ảnh mới từ máy)...';
             const previewImg = document.getElementById('cover-preview-img');
-            previewImg.src = currentActiveGame.cover;
-            document.getElementById('cover-preview-container').classList.remove('hidden');
+            previewImg.src = gameToEdit.cover || '';
+            document.getElementById('cover-preview-container').classList.toggle('hidden', !gameToEdit.cover);
 
-            // Nạp danh sách link tải hiện có
+            // Nạp lại các link tải hiện có.
             const container = document.getElementById('download-links-container');
             container.innerHTML = '';
-            if (currentActiveGame.downloadLinks && currentActiveGame.downloadLinks.length > 0) {
-                currentActiveGame.downloadLinks.forEach(link => {
-                    addDownloadLinkField(link.name, link.url);
+            if (Array.isArray(gameToEdit.downloadLinks) && gameToEdit.downloadLinks.length > 0) {
+                gameToEdit.downloadLinks.forEach(link => {
+                    addDownloadLinkField(link.name || '', link.url || '');
                 });
             } else {
                 addDownloadLinkField();
@@ -718,11 +834,13 @@
         }
 
         function confirmDeleteGame() {
-            if (!currentActiveGame) return;
+            if (!isAdmin || !currentActiveGame) return;
             if (confirm(`Bạn có chắc chắn muốn xóa tựa game "${currentActiveGame.title}" không?`)) {
-                gamesData = gamesData.filter(g => g.id !== currentActiveGame.id);
-                closeGameModal();
-                renderCatalog();
+                gamesData = gamesData.filter(game => String(game.id) !== String(currentActiveGame.id));
+                saveGamesToStorage();
+                currentActiveGame = null;
+                history.replaceState(null, '', location.pathname + location.search);
+                showDashboard();
                 showToast('Đã xóa game thành công khỏi hệ thống!');
             }
         }
@@ -736,9 +854,11 @@
         }
 
         function closeGameModal() {
-            const modal = document.getElementById('game-modal');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            currentActiveGame = null;
+            if (location.hash.startsWith('#game/')) {
+                history.pushState(null, '', location.pathname + location.search);
+            }
+            showDashboard();
+            document.title = 'KuroG - Game18';
         }
 
         function showToast(msg) {
