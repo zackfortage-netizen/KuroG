@@ -118,10 +118,25 @@
         <!-- Main Content Area -->
         <main class="flex-1 bg-darkbg-900 overflow-y-auto p-4 md:p-8">
             <section id="tab-dashboard" class="space-y-6">
-                <div class="flex flex-col md:flex-row justify-between gap-4 items-center">
-                    <div class="relative w-full md:w-80">
+                <div class="space-y-3">
+                    <div class="relative w-full">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                        <input type="text" id="catalog-search" oninput="renderCatalog()" placeholder="Tìm kiếm game..." class="w-full bg-darkbg-800 text-slate-200 text-sm pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500 transition-all">
+                        <input type="search" id="catalog-search" oninput="renderCatalog()" placeholder="Tìm theo tên hoặc mô tả game..." class="w-full bg-darkbg-800 text-slate-200 text-sm pl-10 pr-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500 transition-all">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        <select id="filter-category" onchange="renderCatalog()" class="w-full bg-darkbg-800 text-slate-200 text-sm px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500">
+                            <option value="">Tất cả thể loại</option><option>RPG</option><option>Visual Novel</option><option>main nam</option><option>main nữ</option><option>2D</option><option>3D</option><option>Nuôi Gái</option>
+                        </select>
+                        <select id="filter-date" onchange="renderCatalog()" class="w-full bg-darkbg-800 text-slate-200 text-sm px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500">
+                            <option value="">Mọi thời gian</option><option value="7">7 ngày qua</option><option value="30">30 ngày qua</option><option value="90">90 ngày qua</option>
+                        </select>
+                        <select id="filter-sort" onchange="renderCatalog()" class="w-full bg-darkbg-800 text-slate-200 text-sm px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500">
+                            <option value="newest">Mới đăng gần đây</option><option value="popular">Xem nhiều nhất</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <p id="catalog-result-count" class="text-xs text-slate-400">Đang tải danh sách game...</p>
+                        <button type="button" onclick="resetCatalogFilters()" class="text-xs text-brand-400 hover:text-brand-300 font-semibold whitespace-nowrap"><i class="fa-solid fa-rotate-left mr-1"></i>Xóa bộ lọc</button>
                     </div>
                 </div>
 
@@ -288,6 +303,19 @@
                 <div class="space-y-1.5">
                     <label class="text-xs font-medium text-slate-300">Tên Game</label>
                     <input type="text" id="game-title" required placeholder="Ví dụ: Cyberpunk Runner 2..." class="w-full bg-darkbg-900 text-slate-200 text-sm px-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500 transition-all">
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <label class="text-xs font-medium text-slate-300">Thể loại game <span class="text-rose-400">*</span></label>
+                        <span id="selected-genre-count" class="text-[11px] text-slate-400">Đã chọn: 1</span>
+                    </div>
+                    <input type="search" id="genre-search" oninput="renderGenreOptions()" placeholder="Tìm thể loại..." class="w-full bg-darkbg-900 text-slate-200 text-sm px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500">
+                    <div id="game-genre-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto rounded-xl border border-slate-700 bg-darkbg-900 p-3"></div>
+                    <div class="flex items-center justify-between">
+                        <p class="text-[11px] text-slate-500">Có thể chọn nhiều thể loại cho cùng một game.</p>
+                        <button type="button" onclick="clearGameGenres()" class="text-[11px] text-brand-400 hover:text-brand-300">Bỏ chọn tất cả</button>
+                    </div>
                 </div>
 
                 <div class="space-y-1.5">
@@ -508,45 +536,120 @@
             }[char]));
         }
 
+        // Danh sách thể loại mới theo cấu hình của KuroG Games.
+        const GAME_GENRES = [
+            'RPG',
+            'Visual Novel',
+            'main nam',
+            'main nữ',
+            '2D',
+            '3D',
+            'Nuôi Gái'
+        ];
+
+        function getGameCategories(game) {
+            if (Array.isArray(game?.categories) && game.categories.length) return game.categories;
+            return game?.category ? [game.category] : [];
+        }
+
+        function getSelectedGameGenres() {
+            return Array.from(document.querySelectorAll('.game-genre-checkbox:checked')).map(el => el.value);
+        }
+
+        function updateSelectedGenreCount() {
+            const count = document.getElementById('selected-genre-count');
+            if (count) count.textContent = `Đã chọn: ${getSelectedGameGenres().length}`;
+        }
+
+        function renderGenreOptions(selected = null) {
+            const container = document.getElementById('game-genre-options');
+            if (!container) return;
+            const selectedValues = selected || getSelectedGameGenres();
+            const keyword = (document.getElementById('genre-search')?.value || '').toLowerCase().trim();
+            const visible = GAME_GENRES.filter(genre => genre.toLowerCase().includes(keyword));
+            container.innerHTML = visible.map(genre => `
+                <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer rounded-lg px-2 py-2 hover:bg-slate-700/50">
+                    <input type="checkbox" class="game-genre-checkbox accent-indigo-500" value="${escapeHTML(genre)}" ${selectedValues.includes(genre) ? 'checked' : ''} onchange="updateSelectedGenreCount()">
+                    <span>${escapeHTML(genre)}</span>
+                </label>`).join('');
+            updateSelectedGenreCount();
+        }
+
+        function setGameGenres(categories) {
+            const values = Array.isArray(categories) && categories.length ? categories : ['RPG'];
+            renderGenreOptions(values);
+        }
+
+        function clearGameGenres() {
+            document.querySelectorAll('.game-genre-checkbox').forEach(el => { el.checked = false; });
+            updateSelectedGenreCount();
+        }
+
+        function resetCatalogFilters() {
+            ['catalog-search', 'filter-category', 'filter-date'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            document.getElementById('filter-sort').value = 'newest';
+            renderCatalog();
+        }
+
         function renderCatalog() {
             const container = document.getElementById('catalog-grid');
-            const searchInput = document.getElementById('catalog-search');
-            const searchVal = (searchInput?.value || '').toLowerCase().trim();
+            const searchVal = (document.getElementById('catalog-search')?.value || '').toLowerCase().trim();
+            const category = document.getElementById('filter-category')?.value || '';
+            const dateRange = Number(document.getElementById('filter-date')?.value || 0);
+            const sortMode = document.getElementById('filter-sort')?.value || 'newest';
+            const now = Date.now();
+            const cutoff = dateRange ? now - dateRange * 24 * 60 * 60 * 1000 : 0;
 
-            // Game mới đăng luôn đứng đầu; game cũ tự động lùi về sau.
-            const newestFirst = [...gamesData].sort((a, b) => {
-                const dateA = Number(a.createdAt || a.id || 0);
-                const dateB = Number(b.createdAt || b.id || 0);
-                return dateB - dateA;
-            });
-            const filtered = newestFirst.filter(game => {
+            const filtered = gamesData.filter(game => {
                 const matchStatus = game.status === 'Public';
-                const matchSearch = String(game.title || '').toLowerCase().includes(searchVal) ||
-                    String(game.desc || '').toLowerCase().includes(searchVal);
-                return matchStatus && matchSearch;
+                const searchable = `${game.title || ''} ${game.desc || ''}`.toLowerCase();
+                const matchSearch = !searchVal || searchable.includes(searchVal);
+                const matchCategory = !category || getGameCategories(game).includes(category);
+                const createdAt = Number(game.createdAt || game.id || 0);
+                const matchDate = !cutoff || (createdAt >= cutoff && createdAt <= now + 86400000);
+                return matchStatus && matchSearch && matchCategory && matchDate;
             });
+
+            filtered.sort((a, b) => {
+                if (sortMode === 'popular') return Number(b.views || 0) - Number(a.views || 0) || Number(b.createdAt || b.id || 0) - Number(a.createdAt || a.id || 0);
+                return Number(b.createdAt || b.id || 0) - Number(a.createdAt || a.id || 0);
+            });
+
+            const countLabel = document.getElementById('catalog-result-count');
+            if (countLabel) countLabel.textContent = `Hiển thị ${filtered.length} / ${gamesData.filter(g => g.status === 'Public').length} game`;
 
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full py-12 text-center text-slate-500">
-                        <i class="fa-solid fa-gamepad text-4xl mb-3 opacity-50"></i>
-                        <p class="text-base font-medium">Chưa có tựa game nào trong hệ thống. Hãy đăng nhập tài khoản Admin để đăng game mới!</p>
+                        <i class="fa-solid fa-filter-circle-xmark text-4xl mb-3 opacity-50"></i>
+                        <p class="text-base font-medium">Không tìm thấy game phù hợp.</p>
+                        <p class="text-xs mt-2">Thử thay đổi từ khóa hoặc xóa bớt bộ lọc.</p>
                     </div>`;
                 return;
             }
 
-            container.innerHTML = filtered.map((game, index) => `
+            const newestGameId = [...gamesData].filter(g => g.status === 'Public').sort((a, b) => Number(b.createdAt || b.id || 0) - Number(a.createdAt || a.id || 0))[0]?.id;
+            container.innerHTML = filtered.map(game => `
                 <article onclick="launchGame('${escapeHTML(game.id)}')" role="link" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();launchGame('${escapeHTML(game.id)}')}" class="glass-panel rounded-2xl overflow-hidden border border-slate-700/55 hover:border-brand-500/60 transition-all duration-300 flex flex-col group cursor-pointer shadow-lg hover:shadow-brand-500/10">
                     <div class="relative h-44 overflow-hidden bg-slate-800">
-                        <img src="${escapeHTML(game.cover || '')}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${escapeHTML(game.title)}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80'">
-                        ${index === 0 ? '<span class="absolute top-3 left-3 bg-brand-600/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">MỚI NHẤT</span>' : ''}
+                        <img src="${escapeHTML(game.cover || '')}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${escapeHTML(game.title)}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80'">
+                        ${String(game.id) === String(newestGameId) ? '<span class="absolute top-3 left-3 bg-brand-600/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">MỚI NHẤT</span>' : ''}
                     </div>
                     <div class="p-4 flex-1 flex flex-col justify-between">
                         <div>
                             <h3 class="font-bold text-base text-white group-hover:text-brand-400 transition-colors line-clamp-1">${escapeHTML(game.title)}</h3>
                             <p class="text-xs text-slate-400 mt-1 line-clamp-2">${escapeHTML(game.desc)}</p>
+                            <div class="flex flex-wrap gap-1.5 mt-3">
+                                ${getGameCategories(game).map(genre => `<span class="text-[10px] px-2 py-1 rounded-md bg-brand-500/10 text-brand-300 border border-brand-500/20">${escapeHTML(genre)}</span>`).join('')}
+                            </div>
                         </div>
-                        <p class="text-xs text-brand-400 mt-4 font-semibold">Xem chi tiết <i class="fa-solid fa-arrow-right ml-1"></i></p>
+                        <div class="flex items-center justify-between mt-4">
+                            <p class="text-xs text-brand-400 font-semibold">Xem chi tiết <i class="fa-solid fa-arrow-right ml-1"></i></p>
+                            <span class="text-[11px] text-slate-500"><i class="fa-regular fa-eye mr-1"></i>${Number(game.views || 0).toLocaleString('vi-VN')}</span>
+                        </div>
                     </div>
                 </article>`).join('');
         }
@@ -614,6 +717,7 @@
         }
 
         function openUploadModal() {
+            setGameGenres(['RPG']);
             document.getElementById('editing-game-id').value = '';
             document.getElementById('modal-form-icon').className = 'fa-solid fa-cloud-arrow-up';
             document.getElementById('modal-form-title').innerText = 'Đăng Tựa Game Mới';
@@ -712,6 +816,12 @@
             const rawUrl = document.getElementById('game-url').value.trim();
             const gameUrl = getYouTubeEmbedUrl(rawUrl);
             const desc = document.getElementById('game-desc').value.trim();
+            const categories = getSelectedGameGenres();
+            if (!categories.length) {
+                showToast('Vui lòng chọn ít nhất một thể loại game.');
+                return;
+            }
+            const category = categories[0];
 
             const downloadLinks = [];
             const linkRows = document.querySelectorAll('#download-links-container > div');
@@ -735,6 +845,8 @@
                 }
                 game.title = title;
                 game.desc = desc;
+                game.categories = categories;
+                game.category = category;
                 game.gameUrl = gameUrl;
                 game.downloadLinks = downloadLinks;
                 if (uploadedCoverBase64) {
@@ -748,6 +860,9 @@
                     createdAt: Date.now(),
                     title: title,
                     desc: desc,
+                    category: category,
+                    categories: categories,
+                    views: 0,
                     cover: uploadedCoverBase64 || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
                     gameUrl: gameUrl,
                     downloadLinks: downloadLinks,
@@ -785,6 +900,8 @@
         function launchGame(id) {
             const game = gamesData.find(item => String(item.id) === String(id));
             if (!game) return;
+            game.views = Number(game.views || 0) + 1;
+            saveGamesToStorage();
             location.hash = `#game/${encodeURIComponent(game.id)}`;
         }
 
@@ -810,6 +927,7 @@
             document.getElementById('game-title').value = gameToEdit.title || '';
             document.getElementById('game-url').value = gameToEdit.gameUrl || '';
             document.getElementById('game-desc').value = gameToEdit.desc || '';
+            setGameGenres(getGameCategories(gameToEdit));
 
             // Giữ ảnh bìa hiện tại nếu quản trị viên không chọn ảnh mới.
             uploadedCoverBase64 = '';
