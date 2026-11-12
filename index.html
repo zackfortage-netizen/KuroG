@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="vi" class="dark">
 <head>
+    <!-- Adsterra OnClick Ads: không tải quảng cáo khi đang có phiên Admin -->
+    <script>
+        (function () {
+            try {
+                const session = JSON.parse(localStorage.getItem('kuroGamesSession_v1') || 'null');
+                // Chỉ phiên đúng tài khoản Admin mới được bỏ qua toàn bộ quảng cáo.
+                if (session && session.userId === 'admin' && session.role === 'Super Admin') return;
+            } catch (error) {
+                // Nếu không đọc được phiên, giữ hành vi mặc định cho khách/thành viên.
+            }
+            const adScript = document.createElement('script');
+            adScript.dataset.zone = '12243933';
+            adScript.src = 'https://al5sm.com/tag.min.js';
+            adScript.async = true;
+            (document.head || document.documentElement).appendChild(adScript);
+        })();
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KuroG - Game18</title>
@@ -180,6 +198,40 @@
                             <button id="detail-youtube-button" type="button" onclick="playYouTubeVideo()" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all"><i class="fa-solid fa-play"></i> Xem hướng dẫn trên YouTube</button>
                         </div>
                         <p id="detail-no-youtube" class="hidden text-xs text-slate-500">Game này chưa có video hướng dẫn.</p>
+                    </section>
+                    <!-- GAME RATINGS & COMMENTS -->
+                    <section id="game-reviews" class="bg-darkbg-800/80 p-5 sm:p-6 rounded-2xl border border-slate-700/60 space-y-5">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider"><i class="fa-solid fa-star text-amber-400 mr-2"></i>Đánh giá & Bình luận</h2>
+                                <p class="text-xs text-slate-500 mt-1">Chia sẻ cảm nhận của bạn về trò chơi.</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="flex items-center gap-2 justify-end"><span id="review-average" class="text-2xl font-black text-amber-400">—</span><span id="review-average-stars" class="text-amber-400 text-sm">☆☆☆☆☆</span></div>
+                                <p id="review-count" class="text-[11px] text-slate-500">Chưa có đánh giá</p>
+                            </div>
+                        </div>
+                        <div id="review-form-area" class="rounded-xl bg-darkbg-900/70 border border-slate-700/60 p-4">
+                            <div id="review-guest-notice" class="text-sm text-slate-400 flex flex-wrap items-center justify-between gap-3">
+                                <span><i class="fa-solid fa-lock mr-2 text-brand-400"></i>Đăng nhập hoặc tạo tài khoản để đánh giá và bình luận.</span>
+                                <div class="flex gap-2"><button type="button" onclick="openLoginModal()" class="px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold">Đăng nhập</button><button type="button" onclick="openRegisterModal()" class="px-3 py-2 rounded-lg border border-slate-600 hover:bg-slate-700 text-slate-200 text-xs font-semibold">Đăng ký</button></div>
+                            </div>
+                            <form id="review-form" onsubmit="submitGameReview(event)" class="hidden space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <p class="text-sm font-semibold text-slate-200">Đánh giá của bạn</p>
+                                    <div id="review-star-picker" class="flex items-center gap-1" role="radiogroup" aria-label="Chọn số sao">
+                                        <button type="button" class="review-star text-2xl text-slate-600 hover:text-amber-400" data-rating="1" aria-label="1 sao" onclick="selectReviewRating(1)">★</button>
+                                        <button type="button" class="review-star text-2xl text-slate-600 hover:text-amber-400" data-rating="2" aria-label="2 sao" onclick="selectReviewRating(2)">★</button>
+                                        <button type="button" class="review-star text-2xl text-slate-600 hover:text-amber-400" data-rating="3" aria-label="3 sao" onclick="selectReviewRating(3)">★</button>
+                                        <button type="button" class="review-star text-2xl text-slate-600 hover:text-amber-400" data-rating="4" aria-label="4 sao" onclick="selectReviewRating(4)">★</button>
+                                        <button type="button" class="review-star text-2xl text-slate-600 hover:text-amber-400" data-rating="5" aria-label="5 sao" onclick="selectReviewRating(5)">★</button>
+                                    </div>
+                                </div>
+                                <textarea id="review-comment-input" required maxlength="1200" rows="3" placeholder="Viết bình luận của bạn về game..." class="w-full resize-y bg-darkbg-800 text-slate-200 text-sm p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500" ></textarea>
+                                <div class="flex flex-wrap items-center justify-between gap-2"><p id="review-own-status" class="text-[11px] text-slate-500">Bạn có thể cập nhật đánh giá của mình sau này.</p><button id="review-submit-button" type="submit" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold"><i class="fa-solid fa-paper-plane mr-2"></i>Gửi đánh giá</button></div>
+                            </form>
+                        </div>
+                        <div id="review-list" class="space-y-3"><p class="text-sm text-slate-500 text-center py-5">Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ!</p></div>
                     </section>
                 </article>
             </section>
@@ -453,9 +505,17 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         const GAMES_STORAGE_KEY = 'kuroGamesData_v1';
+        const USERS_STORAGE_KEY = 'kuroGamesUsers_v1';
+        const SESSION_STORAGE_KEY = 'kuroGamesSession_v1';
+        const REVIEWS_STORAGE_KEY = 'kuroGamesReviews_v1';
+        const GAME_AD_URL = 'https://uplcm.com/4/12244003';
+        // Mỗi game chỉ mở quảng cáo một lần trong mỗi lần tải trang; tải lại trang sẽ đặt lại danh sách này.
+        const gameAdOpenedThisPage = new Set();
         let gamesData = [];
         let isLoggedIn = false;
         let isAdmin = false;
+        let currentUser = null;
+        let selectedReviewRating = 5;
         let uploadedCoverBase64 = "";
         let currentActiveGame = null;
 
@@ -483,11 +543,146 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             loadGamesFromStorage();
+            restoreUserSession();
             renderCatalog();
             addDownloadLinkField();
             handleRouteChange();
         });
         window.addEventListener('hashchange', handleRouteChange);
+
+        function readJSONStorage(key, fallback = []) {
+            try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value ?? fallback; }
+            catch (error) { console.error('Không thể đọc dữ liệu:', key, error); return fallback; }
+        }
+
+        function saveJSONStorage(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+            catch (error) { console.error('Không thể lưu dữ liệu:', key, error); showToast('Không thể lưu dữ liệu trong trình duyệt.'); return false; }
+        }
+
+        async function hashPassword(password) {
+            if (!window.crypto?.subtle) throw new Error('SECURE_CONTEXT_REQUIRED');
+            const bytes = new TextEncoder().encode(password);
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        function setMemberInterface(name, role = 'Member') {
+            isLoggedIn = true;
+            isAdmin = role === 'Super Admin';
+            document.getElementById('user-display-name').textContent = name;
+            document.getElementById('user-display-role').textContent = role;
+            document.getElementById('auth-logged-out').classList.add('hidden');
+            document.getElementById('auth-logged-in').classList.remove('hidden');
+            document.getElementById('auth-logged-in').classList.add('flex');
+            const uploadBtn = document.getElementById('admin-upload-btn');
+            uploadBtn.classList.toggle('hidden', !isAdmin);
+            uploadBtn.classList.toggle('flex', isAdmin);
+            if (currentActiveGame) renderGameReviews(currentActiveGame);
+        }
+
+        function restoreUserSession() {
+            const session = readJSONStorage(SESSION_STORAGE_KEY, null);
+            if (!session) return;
+            if (session.userId === 'admin' && session.role === 'Super Admin') {
+                currentUser = { id: 'admin', name: 'Administrator', email: 'admin@gmail.com', role: 'Super Admin' };
+                setMemberInterface('Administrator', 'Super Admin');
+                return;
+            }
+            const users = readJSONStorage(USERS_STORAGE_KEY, []);
+            const user = users.find(item => item.id === session.userId);
+            if (user) {
+                currentUser = { id: user.id, name: user.name, email: user.email, role: 'Member' };
+                setMemberInterface(user.name, 'Member');
+            } else localStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+
+        function getReviewsForGame(gameId) {
+            const all = readJSONStorage(REVIEWS_STORAGE_KEY, {});
+            return Array.isArray(all[String(gameId)]) ? all[String(gameId)] : [];
+        }
+
+        function renderGameReviews(game) {
+            if (!game) return;
+            const reviews = getReviewsForGame(game.id);
+            const average = reviews.length ? reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length : 0;
+            document.getElementById('review-average').textContent = reviews.length ? average.toFixed(1) : '—';
+            document.getElementById('review-average-stars').textContent = '★'.repeat(Math.round(average)) + '☆'.repeat(5 - Math.round(average));
+            document.getElementById('review-count').textContent = reviews.length ? `${reviews.length} lượt đánh giá` : 'Chưa có đánh giá';
+
+            const guestNotice = document.getElementById('review-guest-notice');
+            const form = document.getElementById('review-form');
+            const canReview = Boolean(isLoggedIn && currentUser);
+            // Khách vẫn xem được đánh giá và tải game, nhưng không được gửi đánh giá/bình luận.
+            guestNotice.classList.toggle('hidden', canReview);
+            form.classList.toggle('hidden', !canReview);
+            const ownReview = currentUser ? reviews.find(item => item.userId === currentUser.id) : null;
+            if (ownReview) {
+                document.getElementById('review-comment-input').value = ownReview.comment || '';
+                document.getElementById('review-own-status').textContent = 'Bạn đã đánh giá game này. Gửi lại để cập nhật đánh giá.';
+                document.getElementById('review-submit-button').innerHTML = '<i class="fa-solid fa-rotate mr-2"></i>Cập nhật đánh giá';
+                selectReviewRating(Number(ownReview.rating) || 5);
+            } else {
+                document.getElementById('review-comment-input').value = '';
+                document.getElementById('review-own-status').textContent = 'Bạn có thể đánh giá mỗi game một lần và cập nhật khi cần.';
+                document.getElementById('review-submit-button').innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>Gửi đánh giá';
+                selectReviewRating(5);
+            }
+
+            const list = document.getElementById('review-list');
+            if (!reviews.length) {
+                list.innerHTML = '<p class="text-sm text-slate-500 text-center py-5">Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ!</p>';
+                return;
+            }
+            list.innerHTML = [...reviews].sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0)).map(item => `
+                <article class="rounded-xl border border-slate-700/60 bg-darkbg-900/50 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div><p class="text-sm font-semibold text-slate-200">${escapeHTML(item.userName || 'Thành viên')}</p><p class="text-amber-400 text-sm mt-1">${'★'.repeat(Math.max(0, Math.min(5, Number(item.rating) || 0)))}<span class="text-slate-600">${'☆'.repeat(5 - Math.max(0, Math.min(5, Number(item.rating) || 0)))}</span></p></div>
+                        <time class="text-[11px] text-slate-500">${new Date(Number(item.updatedAt || item.createdAt || Date.now())).toLocaleString('vi-VN')}</time>
+                    </div>
+                    <p class="text-sm text-slate-300 leading-6 whitespace-pre-wrap break-words mt-3">${escapeHTML(item.comment || '')}</p>
+                    ${currentUser && item.userId === currentUser.id ? '<p class="text-[10px] text-brand-400 mt-3">Đánh giá của bạn</p>' : ''}
+                </article>`).join('');
+        }
+
+        function selectReviewRating(rating) {
+            selectedReviewRating = Math.max(1, Math.min(5, Number(rating) || 5));
+            document.querySelectorAll('.review-star').forEach(button => {
+                const active = Number(button.dataset.rating) <= selectedReviewRating;
+                button.classList.toggle('text-amber-400', active);
+                button.classList.toggle('text-slate-600', !active);
+                button.setAttribute('aria-checked', Number(button.dataset.rating) === selectedReviewRating ? 'true' : 'false');
+            });
+        }
+
+        function submitGameReview(event) {
+            event.preventDefault();
+            if (!isLoggedIn || !currentUser) {
+                showToast('Bạn cần đăng nhập để bình luận và đánh giá.');
+                openLoginModal();
+                return;
+            }
+            if (!currentActiveGame) return;
+            const comment = document.getElementById('review-comment-input').value.trim();
+            if (!comment) { showToast('Vui lòng nhập nội dung bình luận.'); return; }
+            const all = readJSONStorage(REVIEWS_STORAGE_KEY, {});
+            const key = String(currentActiveGame.id);
+            const reviews = Array.isArray(all[key]) ? all[key] : [];
+            const existing = reviews.find(item => item.userId === currentUser.id);
+            const now = Date.now();
+            if (existing) {
+                existing.rating = selectedReviewRating;
+                existing.comment = comment;
+                existing.updatedAt = now;
+                existing.userName = currentUser.name;
+            } else {
+                reviews.push({ id: `${currentUser.id}_${now}`, userId: currentUser.id, userName: currentUser.name, rating: selectedReviewRating, comment, createdAt: now, updatedAt: now });
+            }
+            all[key] = reviews;
+            if (!saveJSONStorage(REVIEWS_STORAGE_KEY, all)) return;
+            renderGameReviews(currentActiveGame);
+            showToast(existing ? 'Đã cập nhật đánh giá của bạn!' : 'Đã gửi đánh giá thành công!');
+        }
 
         function switchTab(tabName) {
             const el = document.getElementById(`tab-${tabName}`);
@@ -696,6 +891,7 @@
             document.getElementById('detail-no-youtube').classList.toggle('hidden', hasVideo);
             document.getElementById('detail-admin-actions').classList.toggle('hidden', !isAdmin);
             document.getElementById('detail-admin-actions').classList.toggle('flex', isAdmin);
+            renderGameReviews(game);
             document.title = `${game.title} | KuroG Games`;
             window.scrollTo({ top: 0, behavior: 'auto' });
         }
@@ -756,56 +952,62 @@
             setTimeout(openLoginModal, 150);
         }
 
-        function handleLoginSubmit(event) {
+        async function handleLoginSubmit(event) {
             event.preventDefault();
-            const emailInput = document.getElementById('login-username').value.trim();
+            const emailInput = document.getElementById('login-username').value.trim().toLowerCase();
             const passwordInput = document.getElementById('login-password').value;
-
-            const ADMIN_EMAIL = "admin@gmail.com";
-            const ADMIN_PASS = "1234567890!@#$%^&*()";
+            const ADMIN_EMAIL = 'admin@gmail.com';
+            const ADMIN_PASS = '1234567890!@#$%^&*()';
 
             if (emailInput === ADMIN_EMAIL && passwordInput === ADMIN_PASS) {
-                isLoggedIn = true;
-                isAdmin = true;
-                
-                document.getElementById('user-display-name').innerText = "Administrator";
-                document.getElementById('user-display-role').innerText = "Super Admin";
-                
-                document.getElementById('auth-logged-out').classList.add('hidden');
-                document.getElementById('auth-logged-in').classList.remove('hidden');
-                document.getElementById('auth-logged-in').classList.add('flex');
-                
-                const uploadBtn = document.getElementById('admin-upload-btn');
-                uploadBtn.classList.remove('hidden');
-                uploadBtn.classList.add('flex');
-
+                currentUser = { id: 'admin', name: 'Administrator', email: ADMIN_EMAIL, role: 'Super Admin' };
+                saveJSONStorage(SESSION_STORAGE_KEY, { userId: 'admin', role: 'Super Admin' });
+                setMemberInterface('Administrator', 'Super Admin');
                 closeLoginModal();
-                showToast('Đăng nhập thành công tài khoản Quản trị viên!');
-                renderCatalog();
-            } else {
-                showToast('Sai tài khoản hoặc mật khẩu Admin!');
+                // Tải lại trang để script quảng cáo không còn hoạt động trong phiên Admin.
+                // Ở lần tải lại, phần <head> sẽ nhận diện phiên Admin và bỏ qua quảng cáo.
+                window.location.reload();
+                return;
+            }
+            try {
+                const users = readJSONStorage(USERS_STORAGE_KEY, []);
+                const user = users.find(item => item.email === emailInput);
+                if (!user || user.passwordHash !== await hashPassword(passwordInput)) {
+                    showToast('Email hoặc mật khẩu không chính xác.');
+                    return;
+                }
+                currentUser = { id: user.id, name: user.name, email: user.email, role: 'Member' };
+                saveJSONStorage(SESSION_STORAGE_KEY, { userId: user.id, role: 'Member' });
+                setMemberInterface(user.name, 'Member');
+                closeLoginModal();
+                showToast(`Chào mừng trở lại, ${user.name}!`);
+            } catch (error) {
+                showToast(error.message === 'SECURE_CONTEXT_REQUIRED' ? 'Đăng nhập cần website chạy trên HTTPS.' : 'Không thể đăng nhập. Vui lòng thử lại.');
             }
         }
 
-        function handleRegisterSubmit(event) {
+        async function handleRegisterSubmit(event) {
             event.preventDefault();
             const nameInput = document.getElementById('reg-name').value.trim();
-
-            isLoggedIn = true;
-            isAdmin = false;
-            document.getElementById('user-display-name').innerText = nameInput;
-            document.getElementById('user-display-role').innerText = "Member";
-
-            document.getElementById('auth-logged-out').classList.add('hidden');
-            document.getElementById('auth-logged-in').classList.remove('hidden');
-            document.getElementById('auth-logged-in').classList.add('flex');
-            
-            const uploadBtn = document.getElementById('admin-upload-btn');
-            uploadBtn.classList.remove('flex');
-            uploadBtn.classList.add('hidden');
-
-            closeRegisterModal();
-            showToast(`Đăng ký thành công! Chào mừng ${nameInput}`);
+            const emailInput = document.getElementById('reg-email').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('reg-password').value;
+            if (nameInput.length < 2) { showToast('Tên hiển thị cần có ít nhất 2 ký tự.'); return; }
+            if (passwordInput.length < 8) { showToast('Mật khẩu cần có ít nhất 8 ký tự.'); return; }
+            const users = readJSONStorage(USERS_STORAGE_KEY, []);
+            if (users.some(user => user.email === emailInput)) { showToast('Email này đã được đăng ký.'); return; }
+            try {
+                const user = { id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, name: nameInput, email: emailInput, passwordHash: await hashPassword(passwordInput), createdAt: Date.now() };
+                users.push(user);
+                if (!saveJSONStorage(USERS_STORAGE_KEY, users)) return;
+                currentUser = { id: user.id, name: user.name, email: user.email, role: 'Member' };
+                saveJSONStorage(SESSION_STORAGE_KEY, { userId: user.id, role: 'Member' });
+                setMemberInterface(nameInput, 'Member');
+                closeRegisterModal();
+                document.getElementById('reg-password').value = '';
+                showToast(`Đăng ký thành công! Chào mừng ${nameInput}`);
+            } catch (error) {
+                showToast(error.message === 'SECURE_CONTEXT_REQUIRED' ? 'Đăng ký cần website chạy trên HTTPS.' : 'Không thể tạo tài khoản. Vui lòng thử lại.');
+            }
         }
 
         function handleUploadGameSubmit(event) {
@@ -885,6 +1087,8 @@
         function handleLogout() {
             isLoggedIn = false;
             isAdmin = false;
+            currentUser = null;
+            localStorage.removeItem(SESSION_STORAGE_KEY);
             document.getElementById('auth-logged-in').classList.add('hidden');
             document.getElementById('auth-logged-in').classList.remove('flex');
             document.getElementById('auth-logged-out').classList.remove('hidden');
@@ -893,13 +1097,24 @@
             uploadBtn.classList.remove('flex');
             uploadBtn.classList.add('hidden');
 
-            showToast('Đã đăng xuất khỏi hệ thống.');
-            renderCatalog();
+            if (currentActiveGame) renderGameReviews(currentActiveGame);
+            // Sau khi Admin đăng xuất, tải lại để quảng cáo hoạt động bình thường cho khách.
+            window.location.reload();
         }
 
         function launchGame(id) {
             const game = gamesData.find(item => String(item.id) === String(id));
             if (!game) return;
+
+            // Direct Link chỉ mở cho khách và tài khoản thường; Admin được miễn.
+            // Mỗi tựa game mở tối đa một lượt trong mỗi lần tải trang, giữ nguyên cơ chế hiện tại.
+            const gameKey = String(game.id);
+            if (isAdmin !== true && !gameAdOpenedThisPage.has(gameKey)) {
+                gameAdOpenedThisPage.add(gameKey);
+                const adWindow = window.open(GAME_AD_URL, '_blank');
+                if (adWindow) adWindow.opener = null;
+            }
+
             game.views = Number(game.views || 0) + 1;
             saveGamesToStorage();
             location.hash = `#game/${encodeURIComponent(game.id)}`;
