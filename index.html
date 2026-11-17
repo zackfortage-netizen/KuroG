@@ -1,24 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" class="dark">
 <head>
-    <!-- Adsterra OnClick Ads: không tải quảng cáo khi đang có phiên Admin -->
-    <script>
-        (function () {
-            try {
-                const session = JSON.parse(localStorage.getItem('kuroGamesSession_v1') || 'null');
-                // Chỉ phiên đúng tài khoản Admin mới được bỏ qua toàn bộ quảng cáo.
-                if (session && session.userId === 'admin' && session.role === 'Super Admin') return;
-            } catch (error) {
-                // Nếu không đọc được phiên, giữ hành vi mặc định cho khách/thành viên.
-            }
-            const adScript = document.createElement('script');
-            adScript.dataset.zone = '12243933';
-            adScript.src = 'https://al5sm.com/tag.min.js';
-            adScript.async = true;
-            (document.head || document.documentElement).appendChild(adScript);
-        })();
-    </script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KuroG - Game18</title>
@@ -56,6 +38,10 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase: đồng bộ danh sách game giữa mọi người dùng -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <style>
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -504,11 +490,42 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        const firebaseConfig = {
+            apiKey: 'AIzaSyAipLXkiOUG-PYWz6YQGKQyPGycV7vXObw',
+            authDomain: 'kurog-4cbf7.firebaseapp.com',
+            projectId: 'kurog-4cbf7',
+            storageBucket: 'kurog-4cbf7.firebasestorage.app',
+            messagingSenderId: '1015975447642',
+            appId: '1:1015975447642:web:40e3ef5c5dfb586aa45c63',
+            measurementId: 'G-2EQPH4QRJ4'
+        };
+        firebase.initializeApp(firebaseConfig);
+        const firebaseAuth = firebase.auth();
+        const firestore = firebase.firestore();
+        const gamesCollection = firestore.collection('games');
+        const FIREBASE_ADMIN_EMAIL = 'admin@gmail.com'; // Tạo tài khoản này trong Firebase Authentication
+        let gamesSnapshotUnsubscribe = null;
+        let isLoadingRemoteGames = false;
+
         const GAMES_STORAGE_KEY = 'kuroGamesData_v1';
         const USERS_STORAGE_KEY = 'kuroGamesUsers_v1';
         const SESSION_STORAGE_KEY = 'kuroGamesSession_v1';
         const REVIEWS_STORAGE_KEY = 'kuroGamesReviews_v1';
         const GAME_AD_URL = 'https://uplcm.com/4/12244003';
+
+        // Chỉ tải Popunder sau khi Firebase xác nhận người dùng KHÔNG phải Admin.
+        // Không kiểm tra localStorage thủ công vì Firebase có thể khôi phục phiên bất đồng bộ.
+        let nonAdminAdScriptLoaded = false;
+        function loadAdsForNonAdmin() {
+            if (isAdmin || nonAdminAdScriptLoaded) return;
+            nonAdminAdScriptLoaded = true;
+            const adScript = document.createElement('script');
+            adScript.dataset.zone = '12243933';
+            adScript.src = 'https://al5sm.com/tag.min.js';
+            adScript.async = true;
+            (document.head || document.documentElement).appendChild(adScript);
+        }
+
         // Mỗi game chỉ mở quảng cáo một lần trong mỗi lần tải trang; tải lại trang sẽ đặt lại danh sách này.
         const gameAdOpenedThisPage = new Set();
         let gamesData = [];
@@ -533,20 +550,83 @@
         function saveGamesToStorage() {
             try {
                 localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(gamesData));
-                return true;
             } catch (error) {
                 console.error('Không thể lưu dữ liệu game:', error);
-                showToast('Không đủ dung lượng trình duyệt để lưu. Hãy dùng ảnh có dung lượng nhỏ hơn.');
+                showToast('Không đủ dung lượng trình duyệt để lưu ảnh. Hãy dùng ảnh có dung lượng nhỏ hơn.');
                 return false;
+            }
+            // Chỉ đồng bộ thay đổi lên máy chủ khi Firebase xác thực đúng tài khoản quản trị.
+            if (isAdmin && firebaseAuth.currentUser) syncGamesToFirestore().catch(error => {
+                console.error('Lỗi đồng bộ game lên Firestore:', error);
+                showToast('Không thể đồng bộ lên máy chủ. Kiểm tra Firestore Rules và kết nối mạng.');
+            });
+            return true;
+        }
+
+        async function loadGamesFromFirestore() {
+            isLoadingRemoteGames = true;
+            try {
+                const snapshot = await gamesCollection.get();
+                const remoteGames = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) }));
+                if (remoteGames.length) {
+                    gamesData = remoteGames.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+                    localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(gamesData));
+                }
+                renderCatalog();
+                // Cập nhật danh sách ngay khi admin hoặc người khác đăng/xóa game.
+                if (gamesSnapshotUnsubscribe) gamesSnapshotUnsubscribe();
+                gamesSnapshotUnsubscribe = gamesCollection.orderBy('createdAt', 'desc').onSnapshot(snapshotNow => {
+                    gamesData = snapshotNow.docs.map(doc => ({ ...doc.data(), id: String(doc.id) }));
+                    try { localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(gamesData)); } catch (_) {}
+                    renderCatalog();
+                    if (currentActiveGame) {
+                        const refreshed = gamesData.find(g => String(g.id) === String(currentActiveGame.id));
+                        if (refreshed) currentActiveGame = refreshed;
+                    }
+                }, error => console.error('Không thể nhận cập nhật game trực tuyến:', error));
+            } catch (error) {
+                console.error('Không thể tải game từ Firestore:', error);
+                showToast('Chưa kết nối được cơ sở dữ liệu trực tuyến. Đang hiển thị dữ liệu đã lưu trên trình duyệt.');
+            } finally {
+                isLoadingRemoteGames = false;
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        async function syncGamesToFirestore() {
+            if (!isAdmin || !firebaseAuth.currentUser) throw new Error('ADMIN_AUTH_REQUIRED');
+            for (let i = 0; i < gamesData.length; i += 450) {
+                const batch = firestore.batch();
+                gamesData.slice(i, i + 450).forEach(game => {
+                    const id = String(game.id);
+                    batch.set(gamesCollection.doc(id), { ...game, id }, { merge: true });
+                });
+                await batch.commit();
+            }
+        }
+
+        async function migrateLocalGamesToFirestore() {
+            if (!isAdmin || !firebaseAuth.currentUser) return;
+            const snapshot = await gamesCollection.get();
+            const existingIds = new Set(snapshot.docs.map(doc => String(doc.id)));
+            const localGames = (() => {
+                try { const value = JSON.parse(localStorage.getItem(GAMES_STORAGE_KEY) || '[]'); return Array.isArray(value) ? value : []; }
+                catch (_) { return []; }
+            })();
+            const missingGames = localGames.filter(game => !existingIds.has(String(game.id)));
+            for (let i = 0; i < missingGames.length; i += 450) {
+                const batch = firestore.batch();
+                missingGames.slice(i, i + 450).forEach(game => batch.set(gamesCollection.doc(String(game.id)), { ...game, id: String(game.id) }));
+                await batch.commit();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
             loadGamesFromStorage();
-            restoreUserSession();
             renderCatalog();
             addDownloadLinkField();
             handleRouteChange();
+            await loadGamesFromFirestore();
+            restoreUserSession();
         });
         window.addEventListener('hashchange', handleRouteChange);
 
@@ -582,19 +662,39 @@
         }
 
         function restoreUserSession() {
-            const session = readJSONStorage(SESSION_STORAGE_KEY, null);
-            if (!session) return;
-            if (session.userId === 'admin' && session.role === 'Super Admin') {
-                currentUser = { id: 'admin', name: 'Administrator', email: 'admin@gmail.com', role: 'Super Admin' };
-                setMemberInterface('Administrator', 'Super Admin');
-                return;
-            }
-            const users = readJSONStorage(USERS_STORAGE_KEY, []);
-            const user = users.find(item => item.id === session.userId);
-            if (user) {
-                currentUser = { id: user.id, name: user.name, email: user.email, role: 'Member' };
-                setMemberInterface(user.name, 'Member');
-            } else localStorage.removeItem(SESSION_STORAGE_KEY);
+            // Firebase giữ phiên đăng nhập Admin an toàn; không còn tin phiên Admin giả trong localStorage.
+            firebaseAuth.onAuthStateChanged(async user => {
+                if (user && user.email && user.email.toLowerCase() === FIREBASE_ADMIN_EMAIL) {
+                    currentUser = { id: user.uid, name: 'Administrator', email: user.email, role: 'Super Admin' };
+                    setMemberInterface('Administrator', 'Super Admin');
+                    try {
+                        await migrateLocalGamesToFirestore();
+                        await loadGamesFromFirestore();
+                    } catch (error) {
+                        console.error('Không thể chuyển dữ liệu game cũ:', error);
+                        showToast('Đăng nhập Admin được nhưng chưa thể đồng bộ game. Kiểm tra quyền Firestore.');
+                    }
+                    // Admin không tải Popunder; giữ nguyên trạng thái miễn quảng cáo.
+                    return;
+                }
+                const session = readJSONStorage(SESSION_STORAGE_KEY, null);
+                if (!session || session.userId === 'admin') {
+                    localStorage.removeItem(SESSION_STORAGE_KEY);
+                    isLoggedIn = false; isAdmin = false; currentUser = null;
+                    return;
+                }
+                const users = readJSONStorage(USERS_STORAGE_KEY, []);
+                const member = users.find(item => item.id === session.userId);
+                if (member) {
+                    currentUser = { id: member.id, name: member.name, email: member.email, role: 'Member' };
+                    setMemberInterface(member.name, 'Member');
+                } else {
+                    localStorage.removeItem(SESSION_STORAGE_KEY);
+                }
+
+                // Chỉ khách/thành viên mới tải quảng cáo sau khi Firebase đã xác nhận trạng thái.
+                loadAdsForNonAdmin();
+            });
         }
 
         function getReviewsForGame(gameId) {
@@ -695,10 +795,22 @@
                 document.getElementById('file-name-label').innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    uploadedCoverBase64 = e.target.result;
-                    const previewImg = document.getElementById('cover-preview-img');
-                    previewImg.src = uploadedCoverBase64;
-                    document.getElementById('cover-preview-container').classList.remove('hidden');
+                    const sourceImage = new Image();
+                    sourceImage.onload = function() {
+                        const maxSide = 700;
+                        const scale = Math.min(1, maxSide / Math.max(sourceImage.width, sourceImage.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(sourceImage.width * scale));
+                        canvas.height = Math.max(1, Math.round(sourceImage.height * scale));
+                        const context = canvas.getContext('2d');
+                        context.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
+                        uploadedCoverBase64 = canvas.toDataURL('image/jpeg', 0.68);
+                        const previewImg = document.getElementById('cover-preview-img');
+                        previewImg.src = uploadedCoverBase64;
+                        document.getElementById('cover-preview-container').classList.remove('hidden');
+                    };
+                    sourceImage.onerror = () => showToast('Không thể đọc ảnh bìa này. Hãy chọn ảnh khác.');
+                    sourceImage.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
@@ -956,17 +1068,23 @@
             event.preventDefault();
             const emailInput = document.getElementById('login-username').value.trim().toLowerCase();
             const passwordInput = document.getElementById('login-password').value;
-            const ADMIN_EMAIL = 'admin@gmail.com';
-            const ADMIN_PASS = '1234567890!@#$%^&*()';
-
-            if (emailInput === ADMIN_EMAIL && passwordInput === ADMIN_PASS) {
-                currentUser = { id: 'admin', name: 'Administrator', email: ADMIN_EMAIL, role: 'Super Admin' };
-                saveJSONStorage(SESSION_STORAGE_KEY, { userId: 'admin', role: 'Super Admin' });
-                setMemberInterface('Administrator', 'Super Admin');
-                closeLoginModal();
-                // Tải lại trang để script quảng cáo không còn hoạt động trong phiên Admin.
-                // Ở lần tải lại, phần <head> sẽ nhận diện phiên Admin và bỏ qua quảng cáo.
-                window.location.reload();
+            if (emailInput === FIREBASE_ADMIN_EMAIL) {
+                try {
+                    const credential = await firebaseAuth.signInWithEmailAndPassword(emailInput, passwordInput);
+                    currentUser = { id: credential.user.uid, name: 'Administrator', email: credential.user.email, role: 'Super Admin' };
+                    setMemberInterface('Administrator', 'Super Admin');
+                    closeLoginModal();
+                    await migrateLocalGamesToFirestore();
+                    await loadGamesFromFirestore();
+                    showToast('Đăng nhập quản trị thành công.');
+                    window.location.reload();
+                } catch (error) {
+                    console.error('Firebase Admin sign-in error:', error);
+                    const message = error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password'
+                        ? 'Tài khoản Admin chưa được tạo trong Firebase Authentication hoặc mật khẩu không đúng.'
+                        : 'Không thể đăng nhập Admin. Hãy kiểm tra Email/Password đã bật trong Firebase Authentication.';
+                    showToast(message);
+                }
                 return;
             }
             try {
@@ -1010,81 +1128,95 @@
             }
         }
 
-        function handleUploadGameSubmit(event) {
+        async function handleUploadGameSubmit(event) {
             event.preventDefault();
 
-            const editingId = document.getElementById('editing-game-id').value;
-            const title = document.getElementById('game-title').value.trim();
-            const rawUrl = document.getElementById('game-url').value.trim();
-            const gameUrl = getYouTubeEmbedUrl(rawUrl);
-            const desc = document.getElementById('game-desc').value.trim();
-            const categories = getSelectedGameGenres();
-            if (!categories.length) {
-                showToast('Vui lòng chọn ít nhất một thể loại game.');
+            // Chặn gửi nếu phiên Firebase chưa xác thực hoặc không phải tài khoản quản trị.
+            if (!isAdmin || !firebaseAuth.currentUser || firebaseAuth.currentUser.email?.toLowerCase() !== FIREBASE_ADMIN_EMAIL) {
+                showToast('Phiên Admin chưa hợp lệ. Hãy đăng xuất rồi đăng nhập lại bằng tài khoản Admin Firebase.');
                 return;
             }
-            const category = categories[0];
 
-            const downloadLinks = [];
-            const linkRows = document.querySelectorAll('#download-links-container > div');
-            linkRows.forEach(row => {
-                const nameInput = row.querySelector('.link-name-input').value.trim();
-                const urlInput = row.querySelector('.link-url-input').value.trim();
-                if (urlInput) {
-                    downloadLinks.push({
-                        name: nameInput || 'Link Tải',
-                        url: urlInput
-                    });
-                }
-            });
+            const submitButton = event.submitter || document.querySelector('#upload-modal button[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
+            const originalButtonText = document.getElementById('submit-btn-text')?.innerText || 'Xác Nhận Đăng Game';
+            if (document.getElementById('submit-btn-text')) document.getElementById('submit-btn-text').innerText = 'Đang lưu lên máy chủ...';
 
-            if (editingId) {
-                // Cập nhật đúng game theo ID; không báo thành công nếu không tìm thấy.
-                const game = gamesData.find(g => String(g.id) === String(editingId));
-                if (!game) {
-                    showToast('Không tìm thấy game cần chỉnh sửa. Vui lòng mở lại game và thử lại.');
-                    return;
-                }
-                game.title = title;
-                game.desc = desc;
-                game.categories = categories;
-                game.category = category;
-                game.gameUrl = gameUrl;
-                game.downloadLinks = downloadLinks;
-                if (uploadedCoverBase64) {
-                    game.cover = uploadedCoverBase64;
-                }
-                showToast(`Đã cập nhật thành công tựa game: ${title}`);
-            } else {
-                // Tạo game mới
-                const newGame = {
-                    id: Date.now().toString(),
-                    createdAt: Date.now(),
-                    title: title,
-                    desc: desc,
-                    category: category,
-                    categories: categories,
-                    views: 0,
-                    cover: uploadedCoverBase64 || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
-                    gameUrl: gameUrl,
-                    downloadLinks: downloadLinks,
-                    status: 'Public'
-                };
-                gamesData.unshift(newGame);
-                showToast(`Đăng thành công tựa game: ${title}`);
-            }
+            try {
+                const editingId = document.getElementById('editing-game-id').value;
+                const title = document.getElementById('game-title').value.trim();
+                const rawUrl = document.getElementById('game-url').value.trim();
+                const gameUrl = getYouTubeEmbedUrl(rawUrl);
+                const desc = document.getElementById('game-desc').value.trim();
+                const categories = getSelectedGameGenres();
+                if (!title) { showToast('Vui lòng nhập tên game.'); return; }
+                if (!categories.length) { showToast('Vui lòng chọn ít nhất một thể loại game.'); return; }
+                const category = categories[0];
 
-            saveGamesToStorage();
-            renderCatalog();
-            closeUploadModal();
-            if (editingId) {
-                // Cập nhật lại trang chi tiết kể cả khi hash không thay đổi.
-                location.hash = `#game/${encodeURIComponent(editingId)}`;
-                showGamePage(editingId);
+                const downloadLinks = [];
+                document.querySelectorAll('#download-links-container > div').forEach(row => {
+                    const nameInput = row.querySelector('.link-name-input')?.value.trim() || '';
+                    const urlInput = row.querySelector('.link-url-input')?.value.trim() || '';
+                    if (urlInput) downloadLinks.push({ name: nameInput || 'Link Tải', url: urlInput });
+                });
+
+                let game;
+                if (editingId) {
+                    const existing = gamesData.find(g => String(g.id) === String(editingId));
+                    if (!existing) { showToast('Không tìm thấy game cần chỉnh sửa. Vui lòng mở lại game và thử lại.'); return; }
+                    game = {
+                        ...existing,
+                        title, desc, categories, category, gameUrl, downloadLinks,
+                        ...(uploadedCoverBase64 ? { cover: uploadedCoverBase64 } : {}),
+                        updatedAt: Date.now()
+                    };
+                } else {
+                    game = {
+                        id: Date.now().toString(), createdAt: Date.now(), title, desc,
+                        category, categories, views: 0,
+                        cover: uploadedCoverBase64 || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
+                        gameUrl, downloadLinks, status: 'Public'
+                    };
+                }
+
+                // Ghi Firestore trước; chỉ báo thành công sau khi máy chủ xác nhận.
+                await gamesCollection.doc(String(game.id)).set({ ...game, id: String(game.id) }, { merge: true });
+
+                if (editingId) {
+                    const index = gamesData.findIndex(g => String(g.id) === String(editingId));
+                    if (index !== -1) gamesData[index] = game;
+                    showToast(`Đã cập nhật thành công tựa game: ${title}`);
+                } else {
+                    gamesData = [game, ...gamesData.filter(g => String(g.id) !== String(game.id))];
+                    showToast(`Đăng thành công tựa game: ${title}`);
+                }
+                try { localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(gamesData)); } catch (storageError) { console.warn('Không thể lưu bản sao cục bộ:', storageError); }
+                renderCatalog();
+                closeUploadModal();
+                if (editingId) {
+                    location.hash = `#game/${encodeURIComponent(editingId)}`;
+                    showGamePage(editingId);
+                }
+            } catch (error) {
+                console.error('Lỗi đăng/cập nhật game:', error);
+                const code = error?.code || '';
+                if (code === 'permission-denied' || code === 'firestore/permission-denied') {
+                    showToast('Firebase từ chối ghi dữ liệu. Hãy cập nhật Firestore Rules theo hướng dẫn bên dưới.');
+                } else if (code === 'resource-exhausted' || code === 'invalid-argument') {
+                    showToast('Dữ liệu game hoặc ảnh bìa quá lớn. Hãy chọn ảnh nhỏ hơn rồi thử lại.');
+                } else if (!navigator.onLine) {
+                    showToast('Không có kết nối Internet. Game chưa được đăng lên máy chủ.');
+                } else {
+                    showToast(`Đăng game thất bại (${code || 'lỗi không xác định'}). Mở Console để xem chi tiết.`);
+                }
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+                if (document.getElementById('submit-btn-text')) document.getElementById('submit-btn-text').innerText = originalButtonText;
             }
         }
 
-        function handleLogout() {
+        async function handleLogout() {
+            if (firebaseAuth.currentUser) { try { await firebaseAuth.signOut(); } catch (error) { console.error('Firebase sign out error:', error); } }
             isLoggedIn = false;
             isAdmin = false;
             currentUser = null;
@@ -1166,15 +1298,22 @@
             document.getElementById('upload-modal').classList.remove('opacity-0', 'pointer-events-none');
         }
 
-        function confirmDeleteGame() {
+        async function confirmDeleteGame() {
             if (!isAdmin || !currentActiveGame) return;
+            const gameId = String(currentActiveGame.id);
             if (confirm(`Bạn có chắc chắn muốn xóa tựa game "${currentActiveGame.title}" không?`)) {
-                gamesData = gamesData.filter(game => String(game.id) !== String(currentActiveGame.id));
-                saveGamesToStorage();
-                currentActiveGame = null;
-                history.replaceState(null, '', location.pathname + location.search);
-                showDashboard();
-                showToast('Đã xóa game thành công khỏi hệ thống!');
+                try {
+                    await gamesCollection.doc(gameId).delete();
+                    gamesData = gamesData.filter(game => String(game.id) !== gameId);
+                    localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(gamesData));
+                    currentActiveGame = null;
+                    history.replaceState(null, '', location.pathname + location.search);
+                    showDashboard();
+                    showToast('Đã xóa game khỏi hệ thống trực tuyến!');
+                } catch (error) {
+                    console.error('Không thể xóa game trên Firestore:', error);
+                    showToast('Xóa thất bại. Hãy kiểm tra quyền ghi Firestore của Admin.');
+                }
             }
         }
 
