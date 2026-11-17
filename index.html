@@ -677,6 +677,10 @@
                     // Admin không tải Popunder; giữ nguyên trạng thái miễn quảng cáo.
                     return;
                 }
+                // Người không phải Admin (kể cả khách chưa đăng nhập) đều phải tải quảng cáo.
+                // Đặt trước phần kiểm tra session vì khách sẽ return ở nhánh bên dưới.
+                loadAdsForNonAdmin();
+
                 const session = readJSONStorage(SESSION_STORAGE_KEY, null);
                 if (!session || session.userId === 'admin') {
                     localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -691,9 +695,6 @@
                 } else {
                     localStorage.removeItem(SESSION_STORAGE_KEY);
                 }
-
-                // Chỉ khách/thành viên mới tải quảng cáo sau khi Firebase đã xác nhận trạng thái.
-                loadAdsForNonAdmin();
             });
         }
 
